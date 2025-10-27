@@ -8,6 +8,9 @@
 
         public string CountryName { get; set; }
 
+        public decimal PricePerNight { get; set; }
+
+
         public double Rating { get; set; }
 
         //navigation property

@@ -5,6 +5,7 @@ using HotelListingApi.Domain;
 using HotelListingApi.Domain.Models;
 using HotelListingApi.Interfaces;
 using HotelListingApi.Service;
+using HotelListingApi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -65,9 +66,8 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddDbContext<HotelListDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("HotelListingConnectionString")));
-
-builder.Services.AddDbContext<HotelListingAuthDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("HotelListingAuthConnectionString")));
+/*builder.Services.AddDbContext<HotelListingAuthDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("HotelListingAuthConnectionString")));*/
 
 
 
@@ -118,6 +118,8 @@ builder.Services.AddAutoMapper(typeof(AutomapperProfiles));                     
 builder.Services.AddScoped<IHotelService, HotelService>();                                 //Add Services
 builder.Services.AddScoped<ICountryService, CountryService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IBookingService, BookingService>();
+
 
 
 

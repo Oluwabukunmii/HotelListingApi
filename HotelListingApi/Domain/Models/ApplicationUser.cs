@@ -2,7 +2,7 @@
 
 namespace HotelListingApi.Domain.Models
 {
-    public class ApplicationUser : IdentityUser
+    public class identityUser : IdentityUser
     {
         public string FullName { get; set; } = string.Empty;
 
