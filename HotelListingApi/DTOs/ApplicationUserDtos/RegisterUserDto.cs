@@ -4,6 +4,10 @@ namespace HotelListingApi.DTOs.ApplicationUserDtos
 {
     public class RegisterUserDto
     {
+        [Required]
+
+        public string fullName { get; set; }
+
         [Required]  
         public string UserName { get; set; }
 

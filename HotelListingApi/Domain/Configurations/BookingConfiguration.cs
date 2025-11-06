@@ -1,4 +1,5 @@
-﻿using HotelListingApi.Domain.Models;
+﻿using HotelListingApi.Domain.Enum;
+using HotelListingApi.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -34,7 +35,7 @@ namespace HotelListingApi.Domain.Configurations
 
             builder.Property(b => b.BookingStatus)
                    .HasMaxLength(20)
-                   .HasDefaultValue("Pending")
+                   .HasDefaultValue(BookingStatus.Pending)
                     .HasConversion<string>();
 
 

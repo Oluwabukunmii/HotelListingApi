@@ -1,9 +1,11 @@
 ﻿using HotelListingApi.Common;
+using HotelListingApi.Domain;
+using HotelListingApi.Domain.Models;
 using HotelListingApi.DTOs.ApplicationUserDtos;
 using HotelListingApi.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
 using TodoListapp.CustomActionFilters;
 
@@ -15,17 +17,19 @@ namespace HotelListingApi.Controllers
     {
         private readonly UserManager<IdentityUser> userManager;
         private readonly ITokenService tokenService;
+        private readonly HotelListDbContext hotelListDbContext;
 
-        public AuthController(UserManager<IdentityUser> userManager, ITokenService tokenService)
+        public AuthController(UserManager<IdentityUser> userManager, ITokenService tokenService, HotelListDbContext hotelListDbContext)
         {
             this.userManager = userManager;
             this.tokenService = tokenService;
+            this.hotelListDbContext = hotelListDbContext;
         }
 
         // POST: api/auth/register
         [HttpPost("register")]
         [ValidateModel]
-        public async Task<ActionResult> Register([FromBody] RegisterUserDto registerDto)
+        public async Task<ActionResult<string>> Register([FromBody] RegisterUserDto registerDto)
         {
             var existingUser = await userManager.FindByEmailAsync(registerDto.Email);
             if (existingUser != null)
@@ -33,13 +37,16 @@ namespace HotelListingApi.Controllers
                     new Error(ErrorTypes.Conflict, "User with this email already exists.")
                 ));
 
-            var user = new IdentityUser
+            //creating identityuser
+
+            var identityUser = new IdentityUser
             {
+
                 UserName = registerDto.UserName,
                 Email = registerDto.Email
             };
 
-            var result = await userManager.CreateAsync(user, registerDto.Password);
+            var result = await userManager.CreateAsync(identityUser, registerDto.Password);
 
             if (!result.Succeeded)
             {
@@ -49,12 +56,24 @@ namespace HotelListingApi.Controllers
                 ));
             }
 
-            return ToActionResult(Result.Success());
+            //  Add matching record in your custom Users table
+            var applicationUser = new ApplicationUser
+            {
+                ApplicationUserId = identityUser.Id,
+                Email = registerDto.Email,
+                FullName = registerDto.fullName,
+            };
+
+            hotelListDbContext.ApplicationUser.Add(applicationUser);
+            await hotelListDbContext.SaveChangesAsync();
+
+            return ToActionResult(Result.Success("User successfully created"));
         }
 
         // POST: api/auth/login
         [HttpPost("login")]
         [ValidateModel]
+
         public async Task<ActionResult<LoginUserResponseDto>> Login([FromBody] LoginUserDto loginDto)
         {
             var user = await userManager.FindByEmailAsync(loginDto.Email);

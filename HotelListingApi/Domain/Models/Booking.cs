@@ -21,7 +21,7 @@ namespace HotelListingApi.Domain.Models
         public int HotelId { get; set; }
 
         // ✅ Navigation Properties
-        public identityUser? ApplicationUser { get; set; }
+        public ApplicationUser? ApplicationUser { get; set; }
         public Hotel? Hotel { get; set; }
 
         // Optional — useful for audit tracking

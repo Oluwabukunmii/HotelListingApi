@@ -1,5 +1,6 @@
 ﻿using HotelListingApi.Common;
 using HotelListingApi.Domain.Models;
+using Microsoft.AspNetCore.JsonPatch;
 
 namespace HotelListingApi.Interfaces
 {
@@ -14,5 +15,7 @@ namespace HotelListingApi.Interfaces
         Task<Result> UpdateBookingAsync(int id, Booking booking);
 
         Task<Result> CancelBookingAsync(int id);
+
+        Task<Result<Booking>> PatchBookingAsync(int id, JsonPatchDocument<UpdateBookingDto> patchDoc);
     }
 }

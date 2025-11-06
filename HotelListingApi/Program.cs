@@ -1,5 +1,4 @@
-using System.Configuration;
-using System.Text;
+﻿using System.Text;
 using HotelListingApi.AutoMapper;
 using HotelListingApi.Domain;
 using HotelListingApi.Domain.Models;
@@ -14,73 +13,66 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddControllers();
-
-
+// Add services to the container
+builder.Services.AddControllers()
+                .AddNewtonsoftJson();
 builder.Services.AddEndpointsApiExplorer();
 
-//configure swagger for authorization
 
+// ✅ Configure Swagger for JWT Authorization
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo { Title = " Todo List App Api", Version = "v1" });
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Hotel Listing API",
+        Version = "v1"
+    });
+
     options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme
     {
         Description = "Enter JWT Bearer token in the format: Bearer {your token}",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
-        Scheme = JwtBearerDefaults.AuthenticationScheme,
-
-
+        Scheme = JwtBearerDefaults.AuthenticationScheme
     });
 
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
-
-   {
-          {
-        new OpenApiSecurityScheme
+    {
         {
-             Reference = new OpenApiReference
-          {
-            Type = ReferenceType.SecurityScheme,
-            Id = JwtBearerDefaults.AuthenticationScheme
-          },
-
-             Scheme ="Oauth2",
-             Name = JwtBearerDefaults.AuthenticationScheme,
-             In = ParameterLocation.Header
-
-          },
-
-        new List<string>()
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = JwtBearerDefaults.AuthenticationScheme
+                },
+                Scheme = "oauth2",
+                Name = JwtBearerDefaults.AuthenticationScheme,
+                In = ParameterLocation.Header
+            },
+            new List<string>()
         }
-   });
-
-}
-);
-
-//Add dbcontext
+    });
+});
 
 
+// ✅ Add DbContexts
 builder.Services.AddDbContext<HotelListDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("HotelListingConnectionString")));
-/*builder.Services.AddDbContext<HotelListingAuthDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("HotelListingAuthConnectionString")));*/
+
+builder.Services.AddDbContext<HotelListingAuthDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("HotelListingAuthConnectionString")));
 
 
-
-
-
-builder.Services.AddIdentityCore<IdentityUser>()                       //Add identity core
+// ✅ Add Identity
+builder.Services.AddIdentityCore<IdentityUser>()
     .AddRoles<IdentityRole>()
     .AddTokenProvider<DataProtectorTokenProvider<IdentityUser>>("HotelListing")
     .AddEntityFrameworkStores<HotelListingAuthDbContext>()
     .AddDefaultTokenProviders();
 
-
-builder.Services.Configure<IdentityOptions>(options =>                       //Add identity option
+builder.Services.Configure<IdentityOptions>(options =>
 {
     options.Password.RequireDigit = false;
     options.Password.RequireLowercase = false;
@@ -91,10 +83,8 @@ builder.Services.Configure<IdentityOptions>(options =>                       //A
 });
 
 
-
-// Configure Authentication - JWT Bearer
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)   
+// ✅ Configure Authentication (JWT)
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
@@ -111,37 +101,37 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 
-
-
-
-builder.Services.AddAutoMapper(typeof(AutomapperProfiles));                                 //Add automapperprofiles
-builder.Services.AddScoped<IHotelService, HotelService>();                                 //Add Services
+// ✅ Add AutoMapper & Services
+builder.Services.AddAutoMapper(typeof(AutomapperProfiles));
+builder.Services.AddScoped<IHotelService, HotelService>();
 builder.Services.AddScoped<ICountryService, CountryService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 
 
-
-
-
-//builder.Services.AddOpenApi();
-
+// ✅ Build app ONCE
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+
+// ✅ Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
-
-//app.MapOpenApi();
-
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Hotel Listing API v1");
+
+        // Clean, compact Swagger UI
+        options.DefaultModelsExpandDepth(-1); // hides schema panel
+        options.DefaultModelExpandDepth(0);   // collapses model details
+        options.DisplayRequestDuration();     // shows API response time
+
+    });
 }
 
 app.UseHttpsRedirection();
+
 app.UseAuthentication();
-
-
 app.UseAuthorization();
 
 app.MapControllers();

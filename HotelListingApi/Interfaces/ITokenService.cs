@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using HotelListingApi.Domain.Models;
+using Microsoft.AspNetCore.Identity;
 
 namespace HotelListingApi.Interfaces
 {

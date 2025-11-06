@@ -2,13 +2,15 @@
 
 namespace HotelListingApi.Domain.Models
 {
-    public class identityUser : IdentityUser
+    public class ApplicationUser
     {
-        public string FullName { get; set; } = string.Empty;
+        public string ApplicationUserId { get; set; }
 
-        public string Email { get; set; }
+        public string FullName { get; set; } 
+         
+        public string Email { get; set; }  
 
-        public string Password { get; set; }
+
         public DateTime DateJoined { get; set; } = DateTime.UtcNow;
 
         // Navigation - One user can have many bookings

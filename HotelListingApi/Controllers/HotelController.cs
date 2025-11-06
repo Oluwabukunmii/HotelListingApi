@@ -12,24 +12,24 @@ namespace HotelListingApi.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class HotelsController(HotelListDbContext dbContext, IHotelService hotelService , IMapper mapper) : ControllerBase
+public class HotelController(HotelListDbContext dbContext, IHotelService hotelService, IMapper mapper) : ControllerBase
 {
 
     [HttpGet]
     public async Task<ActionResult<Hotel>> GetAllAsync()
     {
-       var hotel =   await hotelService.GetAllAsync();
+        var hotel = await hotelService.GetAllAsync();
 
         var result = mapper.Map<List<HotelDto>>(hotel);
 
-        return Ok(result);  
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<Hotel>> GetByIdAsync(int id)
     {
 
-     var hotel = await  hotelService.GetByIdAsync(id);
+        var hotel = await hotelService.GetByIdAsync(id);
 
         if (hotel == null)
         {
@@ -37,7 +37,7 @@ public class HotelsController(HotelListDbContext dbContext, IHotelService hotelS
 
         }
 
-     var result =   mapper.Map<HotelDto>(hotel);
+        var result = mapper.Map<HotelDto>(hotel);
 
         return Ok(result);
 
@@ -46,7 +46,7 @@ public class HotelsController(HotelListDbContext dbContext, IHotelService hotelS
 
     }
 
-  
+
 
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateAsync(int id, CreateHotelDto CreateHotelDto)
@@ -73,14 +73,14 @@ public class HotelsController(HotelListDbContext dbContext, IHotelService hotelS
 
 
     [HttpPost]
-    public async Task<ActionResult<Hotel>>CreateAsync (CreateHotelDto CreateHotelDto)
+    public async Task<ActionResult<Hotel>> CreateAsync(CreateHotelDto CreateHotelDto)
 
     {
 
-      var  hotel = mapper.Map<Hotel>(CreateHotelDto);
+        var hotel = mapper.Map<Hotel>(CreateHotelDto);
 
 
-         await hotelService.CreateAsync(hotel);
+        await hotelService.CreateAsync(hotel);
 
 
         return Ok(mapper.Map<HotelDto>(hotel));
@@ -93,7 +93,7 @@ public class HotelsController(HotelListDbContext dbContext, IHotelService hotelS
     public async Task<IActionResult> DeleteAsync(int id)
     {
 
-      var hotel = await hotelService.DeleteAsync(id);
+        var hotel = await hotelService.DeleteAsync(id);
 
         if (hotel == null)
         {
@@ -106,9 +106,8 @@ public class HotelsController(HotelListDbContext dbContext, IHotelService hotelS
         return Ok("Hotel successfully deleted");
     }
 
-   /* private bool HotelExists(int id)
-    {
-        return context.Hotels.Any(e => e.Id == id);
-    }*/
+    /* private bool HotelExists(int id)
+     {
+         return context.Hotels.Any(e => e.Id == id);
+     }*/
 }
-

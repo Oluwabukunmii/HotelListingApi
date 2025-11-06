@@ -4,6 +4,7 @@ using HotelListingApi.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HotelListingApi.Migrations
 {
     [DbContext(typeof(HotelListDbContext))]
-    partial class HotelListDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251027210542_A new migration")]
+    partial class Anewmigration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -35,27 +38,6 @@ namespace HotelListingApi.Migrations
                     b.HasIndex("HotelsId");
 
                     b.ToTable("HotelAdmins_Hotels", (string)null);
-                });
-
-            modelBuilder.Entity("HotelListingApi.Domain.Models.ApplicationUser", b =>
-                {
-                    b.Property<string>("ApplicationUserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("DateJoined")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("FullName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("ApplicationUserId");
-
-                    b.ToTable("ApplicationUser");
                 });
 
             modelBuilder.Entity("HotelListingApi.Domain.Models.Booking", b =>
@@ -194,6 +176,70 @@ namespace HotelListingApi.Migrations
                     b.ToTable("HotelAdmins");
                 });
 
+            modelBuilder.Entity("HotelListingApi.Domain.Models.identityUser", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("AccessFailedCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("DateJoined")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("LockoutEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("LockoutEnd")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("NormalizedEmail")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NormalizedUserName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Password")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("PhoneNumberConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SecurityStamp")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("UserName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("identityUser");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
@@ -216,21 +262,21 @@ namespace HotelListingApi.Migrations
                         new
                         {
                             Id = "1",
-                            ConcurrencyStamp = "d6e8f9a5-7d3a-4b10-b8da-0b2dc20e1c1a",
+                            ConcurrencyStamp = "de362a34-a7f7-4cec-b4df-88c1916373ed",
                             Name = "Administrator",
                             NormalizedName = "ADMINISTRATOR"
                         },
                         new
                         {
                             Id = "2",
-                            ConcurrencyStamp = "4d5e3b9c-8a1f-4e5a-bf9d-53c7a68ed019",
+                            ConcurrencyStamp = "a1bd4b20-d120-4210-b6b9-1c5f1c58f895",
                             Name = "HotelAdmin",
                             NormalizedName = "HOTELADMIN"
                         },
                         new
                         {
                             Id = "3",
-                            ConcurrencyStamp = "77ccffb4-6b6e-4b77-8c0a-75fcd2186f88",
+                            ConcurrencyStamp = "fafa1b3f-2f9d-458f-9c2f-cfa153ce119f",
                             Name = "User",
                             NormalizedName = "USER"
                         });
@@ -253,7 +299,7 @@ namespace HotelListingApi.Migrations
 
             modelBuilder.Entity("HotelListingApi.Domain.Models.Booking", b =>
                 {
-                    b.HasOne("HotelListingApi.Domain.Models.ApplicationUser", "ApplicationUser")
+                    b.HasOne("HotelListingApi.Domain.Models.identityUser", "ApplicationUser")
                         .WithMany("Bookings")
                         .HasForeignKey("ApplicationUserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -281,17 +327,17 @@ namespace HotelListingApi.Migrations
                     b.Navigation("Country");
                 });
 
-            modelBuilder.Entity("HotelListingApi.Domain.Models.ApplicationUser", b =>
-                {
-                    b.Navigation("Bookings");
-                });
-
             modelBuilder.Entity("HotelListingApi.Domain.Models.Country", b =>
                 {
                     b.Navigation("Hotels");
                 });
 
             modelBuilder.Entity("HotelListingApi.Domain.Models.Hotel", b =>
+                {
+                    b.Navigation("Bookings");
+                });
+
+            modelBuilder.Entity("HotelListingApi.Domain.Models.identityUser", b =>
                 {
                     b.Navigation("Bookings");
                 });

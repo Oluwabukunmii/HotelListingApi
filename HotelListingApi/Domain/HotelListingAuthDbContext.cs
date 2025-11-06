@@ -2,14 +2,13 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
-using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.General;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using HotelListingApi.Domain.Configurations;
 using HotelListingApi.Domain.Models;
 
 namespace HotelListingApi.Domain
 {
-    public class HotelListingAuthDbContext : IdentityDbContext<identityUser>
+    public class HotelListingAuthDbContext : IdentityDbContext<IdentityUser>
     {
         public HotelListingAuthDbContext(DbContextOptions<HotelListingAuthDbContext> options)
             : base(options)

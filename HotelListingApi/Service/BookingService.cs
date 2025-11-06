@@ -5,20 +5,22 @@ using HotelListingApi.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using HotelListingApi.Domain.Enum;
 using Microsoft.AspNetCore.Identity;
+using AutoMapper;
+using Microsoft.AspNetCore.JsonPatch;
 
 namespace HotelListingApi.Services
 {
     public class BookingService : IBookingService
     {
         private readonly HotelListDbContext dbContext;
-        private readonly UserManager<identityUser> userManager;
+        private readonly UserManager<IdentityUser> userManager;
+        private readonly IMapper mapper;
 
-
-        public BookingService(HotelListDbContext context, UserManager<identityUser> userManager)
+        public BookingService(HotelListDbContext dbContext, UserManager<IdentityUser> userManager, IMapper mapper)
         {
-            dbContext = context;
+            this.dbContext = dbContext;
             this.userManager = userManager;
-
+            this.mapper = mapper;
         }
 
         public async Task<Result<List<Booking>>> GetAllBookingsByHotelAsync(int hotelId, string applicationUserId)
@@ -59,9 +61,9 @@ namespace HotelListingApi.Services
                 return Result<Booking>.BadRequest(
                     new Error(ErrorTypes.BadRequest, "Invalid booking data."));
 
-            if (booking.CheckInDate == default || booking.CheckOutDate == default)
-                return Result<Booking>.BadRequest(
-                    new Error(ErrorTypes.Validation, "Check-in and check-out dates are required."));
+           // if (booking.CheckInDate == default || booking.CheckOutDate == default)
+               // return Result<Booking>.BadRequest(
+                //    new Error(ErrorTypes.Validation, "Check-in and check-out dates are required."));
 
             if (booking.CheckInDate >= booking.CheckOutDate)
                 return Result<Booking>.BadRequest(
@@ -128,5 +130,51 @@ namespace HotelListingApi.Services
 
             return Result.Success();
         }
+
+
+        // ---- NEW: Patch implementation ----
+        public async Task<Result<Booking>> PatchBookingAsync(int id, JsonPatchDocument<UpdateBookingDto> patchDoc)
+        {
+            if (patchDoc == null)
+                return Result<Booking>.BadRequest(
+                    new Error(ErrorTypes.BadRequest, "Invalid patch document."));
+
+            var existingBooking = await dbContext.Bookings
+                .Include(b => b.Hotel)
+                .FirstOrDefaultAsync(b => b.Id == id);
+
+            if (existingBooking == null)
+                return Result<Booking>.Failure(
+                    new Error(ErrorTypes.NotFound, "Booking not found."));
+
+            if (existingBooking.BookingStatus == BookingStatus.Cancelled)
+                return Result<Booking>.BadRequest(
+                    new Error(ErrorTypes.BadRequest, "Cannot modify a cancelled booking."));
+
+            // Map the existing entity to UpdateBookingDto
+            var bookingToPatch = mapper.Map<UpdateBookingDto>(existingBooking);
+
+            // Apply patch to the DTO
+            patchDoc.ApplyTo(bookingToPatch);
+
+            // Validate new data
+            if (bookingToPatch.CheckInDate >= bookingToPatch.CheckOutDate)
+                return Result<Booking>.BadRequest(
+                    new Error(ErrorTypes.Validation, "Check-in date must be earlier than check-out date."));
+
+            // Map back to entity
+            mapper.Map(bookingToPatch, existingBooking);
+
+            // Recalculate total price
+            var numberOfNights = (existingBooking.CheckOutDate - existingBooking.CheckInDate).TotalDays;
+            existingBooking.TotalPrice = (decimal)numberOfNights * existingBooking.Hotel.PricePerNight;
+
+            await dbContext.SaveChangesAsync();
+
+            return Result<Booking>.Success(existingBooking);
+        }
+
     }
 }
+    
+

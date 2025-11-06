@@ -1,7 +1,6 @@
 ﻿using System.Reflection;
 using HotelListingApi.Domain.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.General;
 
 namespace HotelListingApi.Domain
 {
@@ -18,6 +17,9 @@ namespace HotelListingApi.Domain
 
         public DbSet<Booking> Bookings { get; set; }
         public DbSet<HotelAdmin> HotelAdmins { get; set; }
+
+        public DbSet<ApplicationUser> ApplicationUser { get; set; }
+
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)  //This method is the place for Fluent API model configuration. EF Core calls it during model building. You override it to apply conventions, indexes, relationships, seeding and to apply configuration classes.
