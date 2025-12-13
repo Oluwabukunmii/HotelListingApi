@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using HotelListingApi.Domain;
 using HotelListingApi.Domain.Models;
+using HotelListingApi.Domain.Models.Filtering;
+using HotelListingApi.Domain.Paging;
 using HotelListingApi.DTOs.HotelDtos;
 using HotelListingApi.Interfaces;
 using HotelListingApi.Service;
@@ -12,17 +14,16 @@ namespace HotelListingApi.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class HotelController(HotelListDbContext dbContext, IHotelService hotelService, IMapper mapper) : ControllerBase
+public class HotelController(HotelListDbContext dbContext, IHotelService hotelService, IMapper mapper) : BaseApiController
 {
 
     [HttpGet]
-    public async Task<ActionResult<Hotel>> GetAllAsync()
+    public async Task<ActionResult<PaginationResult<HotelDto>>> GetAllAsync([FromQuery]paginationParameters paginationParameters, [FromQuery]HotelFilterParameter filters)
     {
-        var hotel = await hotelService.GetAllAsync();
+        var hotelResult = await hotelService.GetAllAsync(paginationParameters, filters);
 
-        var result = mapper.Map<List<HotelDto>>(hotel);
 
-        return Ok(result);
+        return ToActionResult(hotelResult);
     }
 
     [HttpGet("{id}")]

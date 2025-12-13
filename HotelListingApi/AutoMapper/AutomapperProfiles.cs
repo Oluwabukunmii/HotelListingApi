@@ -25,6 +25,9 @@ namespace HotelListingApi.AutoMapper
 
             CreateMap<CountryDto, Country>().ReverseMap();
 
+            CreateMap<CountryListDto, Country>().ReverseMap();
+
+
             CreateMap<Booking, BookingDto>().ReverseMap ();
 
             CreateMap<CreateBookingDto, Booking>().ReverseMap();  

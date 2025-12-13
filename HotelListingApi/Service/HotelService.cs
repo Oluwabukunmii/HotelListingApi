@@ -1,12 +1,21 @@
-﻿using HotelListingApi.Domain;
+﻿using System.Diagnostics.Metrics;
+using System.Linq.Dynamic.Core;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using HotelListingApi.Common;
+using HotelListingApi.Domain;
+using HotelListingApi.Domain.Extensions;
 using HotelListingApi.Domain.Models;
+using HotelListingApi.Domain.Models.Filtering;
+using HotelListingApi.Domain.Paging;
+using HotelListingApi.DTOs.HotelDtos;
 using HotelListingApi.Interfaces;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 
 namespace HotelListingApi.Service
 {
-    public class HotelService(HotelListDbContext dbContext) : IHotelService
+    public class HotelService(HotelListDbContext dbContext, IMapper mapper) : IHotelService
     {
         public async Task<Hotel> CreateAsync(Hotel hotel)
         {
@@ -29,14 +38,71 @@ namespace HotelListingApi.Service
             }
 
             dbContext.Hotels.Remove(hotel);
-           await dbContext.SaveChangesAsync();
 
+            dbContext.Entry(hotel).State = EntityState.Modified;
+
+            await dbContext.SaveChangesAsync();
             return hotel;
         }
 
-        public async Task<List<Hotel>> GetAllAsync()
+        public async Task<Result<PaginationResult<HotelDto>>> GetAllAsync(paginationParameters paginationParameters, HotelFilterParameter filters)
         {
-            return await dbContext.Hotels.ToListAsync();
+
+            var allowedSortColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+{
+    { "id", "Id" },      // client can use ?sortBy=id
+    { "name", "Name" },       // client can use ?sortBy=name
+    { "rating", "Rating" },   // client can use ?sortBy=rating
+    { "city", "City" }        // client can use ?sortBy=city
+};
+
+            var query = dbContext.Hotels.AsQueryable();
+            if (filters.CountryId.HasValue)
+            {
+                query = query.Where(q => q.CountryId == filters.CountryId);
+            }
+
+            if (filters.MinRating.HasValue)
+                query = query.Where(h => h.Rating >= filters.MinRating);
+
+            if (filters.MaxRating.HasValue)
+                query = query.Where(h => h.Rating <= filters.MaxRating);
+
+            if (filters.MinPrice.HasValue)
+                query = query.Where(h => h.PricePerNight >= filters.MinPrice);
+
+            if (filters.MaxPrice.HasValue)
+                query = query.Where(h => h.PricePerNight <= filters.MaxPrice);
+
+            if (!string.IsNullOrWhiteSpace(filters.Location))
+                query = query.Where(h => h.Address.Contains(filters.Location));
+
+            // generic search param
+            if (!string.IsNullOrWhiteSpace(filters.Search))
+                query = query.Where(h => h.Name.Contains(filters.Search) ||
+                                        h.Address.Contains(filters.Search));
+
+            query = filters.SortBy?.ToLower() switch
+            {
+                "name" => filters.SortDescending ?
+                    query.OrderByDescending(h => h.Name) : query.OrderBy(h => h.Name),
+                "rating" => filters.SortDescending ?
+                    query.OrderByDescending(h => h.Rating) : query.OrderBy(h => h.Rating),
+                "price" => filters.SortDescending ?
+                    query.OrderByDescending(h => h.PricePerNight) : query.OrderBy(h => h.PricePerNight),
+                _ => query.OrderBy(h => h.Name)
+            };
+
+            var hotels = await query
+            .Include(q => q.Country)
+                .ProjectTo<HotelDto>(mapper.ConfigurationProvider)
+                .ToPaginationResultAsync(paginationParameters, allowedSortColumns,
+    defaultSortColumn: "Id");
+
+            return Result<PaginationResult<HotelDto>>.Success(hotels);
+
+
+            //return await dbContext.Hotels.ToListAsync();
 
 
         }
@@ -71,7 +137,9 @@ namespace HotelListingApi.Service
             existingHotel.CountryName = hotel.CountryName;
             existingHotel.CountryId = hotel.CountryId;
 
-          await dbContext.SaveChangesAsync();
+            dbContext.Entry(existingHotel).State = EntityState.Modified;
+
+            await dbContext.SaveChangesAsync();
 
             return existingHotel;
 

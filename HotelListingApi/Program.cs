@@ -1,5 +1,7 @@
 ﻿using System.Text;
+using HotelListing.Api.CachePolicies;
 using HotelListingApi.AutoMapper;
+using HotelListingApi.Common;
 using HotelListingApi.Domain;
 using HotelListingApi.Domain.Models;
 using HotelListingApi.Interfaces;
@@ -17,6 +19,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers()
                 .AddNewtonsoftJson();
 builder.Services.AddEndpointsApiExplorer();
+//builder.Services.AddMemoryCache();
 
 
 // ✅ Configure Swagger for JWT Authorization
@@ -58,10 +61,36 @@ builder.Services.AddSwaggerGen(options =>
 
 
 // ✅ Add DbContexts
-builder.Services.AddDbContext<HotelListDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("HotelListingConnectionString")));
+//builder.Services.AddDbContext<HotelListDbContext>(options =>
+//  options.UseSqlServer(builder.Configuration.GetConnectionString("HotelListingConnectionString")));
+var hotelConnectionString = builder.Configuration.GetConnectionString("HotelListingConnectionString");
+
+builder.Services.AddDbContextPool<HotelListDbContext>(options =>
+{
+    options.UseSqlServer(hotelConnectionString, sqlOptions =>
+    {
+        sqlOptions.CommandTimeout(30);
+        sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 3,
+            maxRetryDelay: TimeSpan.FromSeconds(5),
+            errorNumbersToAdd: null);
+    });
+
+    // Enable detailed logging and errors in development environment
+    if (builder.Environment.IsDevelopment())
+    {
+        options.EnableSensitiveDataLogging();
+        options.EnableDetailedErrors();
+    }
+
+    // Disable tracking by default to improve read performance
+   /* options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);*/
+
+}, poolSize: 128);
+
 
 builder.Services.AddDbContext<HotelListingAuthDbContext>(options =>
+
     options.UseSqlServer(builder.Configuration.GetConnectionString("HotelListingAuthConnectionString")));
 
 
@@ -108,6 +137,19 @@ builder.Services.AddScoped<ICountryService, CountryService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 
+//Add outpt cache.
+
+builder.Services.AddOutputCache(options =>
+{
+    options.AddPolicy(CacheConstants.AuthenticatedUserCachingPolicy, builder =>
+    {
+        builder.AddPolicy<AuthenticatedUserCachingPolicy>()
+        .SetCacheKeyPrefix(CacheConstants.AuthenticatedUserCachingPolicyTag);
+    }, true);
+});
+    
+
+
 
 // ✅ Build app ONCE
 var app = builder.Build();
@@ -132,7 +174,10 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
+
 app.UseAuthorization();
+
+app.UseOutputCache();
 
 app.MapControllers();
 

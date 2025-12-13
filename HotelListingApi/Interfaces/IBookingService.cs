@@ -1,14 +1,16 @@
 ﻿using HotelListingApi.Common;
 using HotelListingApi.Domain.Models;
+using HotelListingApi.Domain.Paging;
+using HotelListingApi.DTOs.BookingsDtos;
 using Microsoft.AspNetCore.JsonPatch;
 
 namespace HotelListingApi.Interfaces
 {
     public interface IBookingService
     {
-        Task<Result<List<Booking>>> GetAllBookingsByHotelAsync(int hotelId , string applicationUserId);
+        Task<Result<PaginationResult<BookingDto>>> GetAllBookingsByHotelAsync(int hotelId , string applicationUserId, paginationParameters paginationParameters);
 
-        Task<Result<Booking>> GetBookingByIdAsync(int id, string applicationUserId);
+        Task<Result<BookingDto>> GetBookingByIdAsync(int id, string applicationUserId);
 
         Task<Result<Booking>> CreateBookingAsync(Booking booking, string applicationUserId);
 
@@ -16,6 +18,6 @@ namespace HotelListingApi.Interfaces
 
         Task<Result> CancelBookingAsync(int id);
 
-        Task<Result<Booking>> PatchBookingAsync(int id, JsonPatchDocument<UpdateBookingDto> patchDoc);
+        Task<Result<BookingDto>> PatchBookingAsync(int id, string applicationUserId, JsonPatchDocument<UpdateBookingDto> patchDoc);
     }
 }

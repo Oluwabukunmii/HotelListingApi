@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using HotelListingApi.Common;
 using HotelListingApi.Domain.Models;
+using HotelListingApi.Domain.Paging;
 using HotelListingApi.DTOs.BookingsDtos;
 using HotelListingApi.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -28,31 +29,29 @@ namespace HotelListingApi.Controllers
         [HttpGet]
         [Authorize]
 
-        public async Task<IActionResult> GetAllBookings(int hotelId)
+        public async Task<ActionResult<PaginationResult<BookingDto>>> GetAllBookings([FromRoute] int hotelId,
+            [FromQuery] paginationParameters paginationParameters)
+
         {
 
             //Get loggedin user
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var result = await bookingService.GetAllBookingsByHotelAsync(hotelId, userId);
+            var result = await bookingService.GetAllBookingsByHotelAsync(hotelId, userId, paginationParameters);
 
             if (!result.IsSuccess)
                 return BadRequest(result.Errors);
 
 
-            // Map the Booking list to BookingDto list
-            var mappedResult = result.Map(list => mapper.Map<List<BookingDto>>(list));  //list == result.Value , result.Value is a List<Booking>
-
-
             // Return 200 OK if success, proper error if failure
-            return ToActionResult(mappedResult);
+            return  ToActionResult(result);
         }
 
         // GET: api/hotels/{hotelId}/bookings/{id}
         [HttpGet("{id}")]
         [Authorize]
 
-        public async Task<IActionResult> GetBooking(int hotelId, int id)
+        public async Task<ActionResult<BookingDto>> GetBooking(int hotelId, int id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var result = await bookingService.GetBookingByIdAsync(id, userId);
@@ -61,10 +60,8 @@ namespace HotelListingApi.Controllers
                 return BadRequest(result.Errors);
 
 
-            var mappedResult = result.Map(b => mapper.Map<BookingDto>(b));
-            //inline function , wherever you call b return thr mapper dto
 
-            return ToActionResult(mappedResult);
+            return ToActionResult(result);
         }
 
         // POST: api/hotels/{hotelId}/bookings
@@ -107,10 +104,10 @@ namespace HotelListingApi.Controllers
 
 
             if (!result.IsSuccess)
-                return ToActionResult(result);
+                return ToActionResult(Result.Failure(result.Errors));
 
-           // var mappedResult = result.Map(b => mapper.Map<BookingDto>(b));
-          //  return ToActionResult(mappedResult);
+            // var mappedResult = result.Map(b => mapper.Map<BookingDto>(b));
+            //  return ToActionResult(mappedResult);
 
             return ToActionResult(result);
 
@@ -133,11 +130,11 @@ namespace HotelListingApi.Controllers
 
             return Ok("Booking successfully deleted");
         }
-    
+
 
         [HttpPatch("{id:int}")]
         [Authorize]
-        public async Task<IActionResult> PatchBooking(int hotelId, int id, [FromBody] JsonPatchDocument<UpdateBookingDto> patchDoc)
+        public async Task<ActionResult<BookingDto>> PatchBooking(int hotelId, int id, [FromBody] JsonPatchDocument<UpdateBookingDto> patchDoc)
         {
             if (patchDoc == null)
                 return ToActionResult(Result.Failure(new Error(ErrorTypes.BadRequest, "Invalid patch document.")));
@@ -146,41 +143,19 @@ namespace HotelListingApi.Controllers
             if (string.IsNullOrEmpty(userId))
                 return ToActionResult(Result.Failure(new Error(ErrorTypes.Forbid, "User not identified.")));
 
-            // ✅ Delegate all business logic to the service
-            var Patchedresult = await bookingService.PatchBookingAsync(id, patchDoc);
+            // Delegate all business logic to the service
+            var Patchedresult = await bookingService.PatchBookingAsync(id, userId, patchDoc);
 
-            // 🧠 Handle response conversion centrally via BaseApiController
+            // Handle response conversion centrally via BaseApiController
             if (!Patchedresult.IsSuccess)
-                return ToActionResult(Patchedresult);
+                return ToActionResult(Result.Failure(Patchedresult.Errors));
 
-            var updatedBookingDto = mapper.Map<BookingDto>(Patchedresult.Value);
-            return ToActionResult(Result.Success(updatedBookingDto));
+
+            return ToActionResult(Patchedresult);
         }
 
-      // For results that return a value (e.g. BookingDto)
-        private IActionResult ToActionResult<T>(Result<T> result)
-{
-    if (result.IsSuccess)
-        return Ok(result.Value); // ✅ return the actual object
-
-    if (result.Errors != null && result.Errors.Any())
-        return BadRequest(result.Errors);
-
-    return StatusCode(500, "An unexpected error occurred.");
-}
-
-// For results without a value (e.g. Delete, Cancel, etc.)
-private IActionResult ToActionResult(Result result)
-{
-    if (result.IsSuccess)
-        return Ok(); // ✅ Just return 200 OK with no message
-
-    if (result.Errors != null && result.Errors.Any())
-        return BadRequest(result.Errors);
-
-    return StatusCode(500, "An unexpected error occurred.");
-}
-
-
+       
+             
     }
+
 }

@@ -7,6 +7,11 @@ using HotelListingApi.Domain.Enum;
 using Microsoft.AspNetCore.Identity;
 using AutoMapper;
 using Microsoft.AspNetCore.JsonPatch;
+using HotelListingApi.Domain.Paging;
+using HotelListingApi.Domain.Extensions;
+using AutoMapper.QueryableExtensions;
+using HotelListingApi.DTOs.BookingsDtos;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace HotelListingApi.Services
 {
@@ -23,11 +28,20 @@ namespace HotelListingApi.Services
             this.mapper = mapper;
         }
 
-        public async Task<Result<List<Booking>>> GetAllBookingsByHotelAsync(int hotelId, string applicationUserId)
+        public async Task<Result<PaginationResult<BookingDto>>> GetAllBookingsByHotelAsync(int hotelId, string applicationUserId,paginationParameters paginationParameters)
         {
+
+  var allowedSortColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+   {
+    { "id", "Id" },
+    { "checkin", "CheckInDate" },
+    { "checkout", "CheckOutDate" },
+    { "created", "CreatedAt" }
+};
+
             var hotelExists = await dbContext.Hotels.AnyAsync(h => h.Id == hotelId);
             if (!hotelExists)
-                return Result<List<Booking>>.Failure(
+                return Result<PaginationResult<BookingDto>>.Failure(
                     new Error(ErrorTypes.NotFound, "Hotel not found."));
 
 
@@ -36,23 +50,30 @@ namespace HotelListingApi.Services
                 .Include(b => b.Hotel)
                 .Where(b => b.HotelId == hotelId)
                 .Where(b => b.ApplicationUserId == applicationUserId)
+                .ProjectTo<BookingDto>(mapper.ConfigurationProvider)
+                .ToPaginationResultAsync(paginationParameters, allowedSortColumns,
+    defaultSortColumn: "Id");
 
-                .ToListAsync();
+            return Result<PaginationResult<BookingDto>>.Success(bookings);
 
-            return Result<List<Booking>>.Success(bookings);
+
         }
 
-        public async Task<Result<Booking>> GetBookingByIdAsync(int id, string applicationUserId)
+        public async Task<Result<BookingDto>> GetBookingByIdAsync(int id, string applicationUserId)
         {
             var booking = await dbContext.Bookings
                 .Include(b => b.Hotel)
                 .FirstOrDefaultAsync(b => b.Id == id && b.ApplicationUserId == applicationUserId);
 
+
             if (booking == null)
-                return Result<Booking>.Failure(
+                return Result<BookingDto>.Failure(
                     new Error(ErrorTypes.NotFound, "Booking not found."));
 
-            return Result<Booking>.Success(booking);
+            var bookingDto = mapper.Map<BookingDto>(booking);
+
+
+            return Result<BookingDto>.Success(bookingDto);
         }
 
         public async Task<Result<Booking>> CreateBookingAsync(Booking booking, string applicationUserId)
@@ -113,6 +134,9 @@ namespace HotelListingApi.Services
             existingBooking.CheckInDate = booking.CheckInDate;
             existingBooking.CheckOutDate = booking.CheckOutDate;
 
+            dbContext.Entry(existingBooking).State = EntityState.Modified;
+
+
             await dbContext.SaveChangesAsync();
 
             return Result.Success();
@@ -126,6 +150,9 @@ namespace HotelListingApi.Services
                     new Error(ErrorTypes.NotFound, "Booking not found."));
 
             dbContext.Bookings.Remove(booking);
+
+            dbContext.Entry(booking).State = EntityState.Modified;
+
             await dbContext.SaveChangesAsync();
 
             return Result.Success();
@@ -133,33 +160,39 @@ namespace HotelListingApi.Services
 
 
         // ---- NEW: Patch implementation ----
-        public async Task<Result<Booking>> PatchBookingAsync(int id, JsonPatchDocument<UpdateBookingDto> patchDoc)
+        public async Task<Result<BookingDto>> PatchBookingAsync(int id, string applicationUserId, JsonPatchDocument<UpdateBookingDto> patchDoc)
         {
             if (patchDoc == null)
-                return Result<Booking>.BadRequest(
+                return Result<BookingDto>.BadRequest(
                     new Error(ErrorTypes.BadRequest, "Invalid patch document."));
 
             var existingBooking = await dbContext.Bookings
                 .Include(b => b.Hotel)
-                .FirstOrDefaultAsync(b => b.Id == id);
+                .FirstOrDefaultAsync(b => b.Id == id && b.ApplicationUserId == applicationUserId);
+
 
             if (existingBooking == null)
-                return Result<Booking>.Failure(
+                return Result<BookingDto>.Failure(
                     new Error(ErrorTypes.NotFound, "Booking not found."));
 
             if (existingBooking.BookingStatus == BookingStatus.Cancelled)
-                return Result<Booking>.BadRequest(
+                return Result<BookingDto>.BadRequest(
                     new Error(ErrorTypes.BadRequest, "Cannot modify a cancelled booking."));
 
-            // Map the existing entity to UpdateBookingDto
+            // Map the entity to UpdateBookingDto to apply patch
             var bookingToPatch = mapper.Map<UpdateBookingDto>(existingBooking);
+
+
+
+         //   var updatedBookingDto = mapper.Map<BookingDto>(Patchedresult.Value);
+
 
             // Apply patch to the DTO
             patchDoc.ApplyTo(bookingToPatch);
 
             // Validate new data
             if (bookingToPatch.CheckInDate >= bookingToPatch.CheckOutDate)
-                return Result<Booking>.BadRequest(
+                return Result<BookingDto>.BadRequest(
                     new Error(ErrorTypes.Validation, "Check-in date must be earlier than check-out date."));
 
             // Map back to entity
@@ -169,9 +202,15 @@ namespace HotelListingApi.Services
             var numberOfNights = (existingBooking.CheckOutDate - existingBooking.CheckInDate).TotalDays;
             existingBooking.TotalPrice = (decimal)numberOfNights * existingBooking.Hotel.PricePerNight;
 
+            dbContext.Entry(existingBooking).State = EntityState.Modified;
+
             await dbContext.SaveChangesAsync();
 
-            return Result<Booking>.Success(existingBooking);
+            // Map entity to DTO to return
+            var updatedBookingDto = mapper.Map<BookingDto>(existingBooking);
+
+
+            return Result<BookingDto>.Success(updatedBookingDto);
         }
 
     }

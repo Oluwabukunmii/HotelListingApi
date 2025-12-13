@@ -1,24 +1,33 @@
 ﻿using AutoMapper;
+using HotelListingApi.Common;
 using HotelListingApi.Domain;
 using HotelListingApi.Domain.Models;
+using HotelListingApi.Domain.Models.Filtering;
+using HotelListingApi.Domain.Paging;
 using HotelListingApi.DTOs.CountryDtos;
 using HotelListingApi.Interfaces;
 using HotelListingApi.Service;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
 
 namespace HotelListingApi.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class CountryController(HotelListDbContext dbContext, ICountryService countryService, IMapper mapper) : ControllerBase
+public class CountryController(HotelListDbContext dbContext, ICountryService countryService, IMapper mapper) : BaseApiController
 {
     [HttpGet]
-    public async Task<ActionResult<Country>> GetAllAsync()
+    [OutputCache(PolicyName = CacheConstants.AuthenticatedUserCachingPolicy)]
+    public async Task<ActionResult<PaginationResult<CountryListDto>>> GetAllAsync([FromQuery] paginationParameters paginationParameters, [FromQuery] CountryFilterParameter? filters)
     {
-        var countries = await countryService.GetAllAsync();
-        var result = mapper.Map<List<CountryDto>>(countries);
-        return Ok(result);
+        var result = await countryService.GetAllAsync(paginationParameters, filters);
+
+        if (!result.IsSuccess)
+            return BadRequest(result.Errors);
+
+        return ToActionResult(result);
+
     }
 
     [HttpGet("{id}")]

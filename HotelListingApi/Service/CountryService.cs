@@ -1,11 +1,19 @@
-﻿using HotelListingApi.Domain;
+﻿using AutoMapper.QueryableExtensions;
+using AutoMapper;
+using HotelListingApi.Common;
+using HotelListingApi.Domain;
 using HotelListingApi.Domain.Models;
+using HotelListingApi.Domain.Paging;
+using HotelListingApi.DTOs.BookingsDtos;
+using HotelListingApi.DTOs.CountryDtos;
 using HotelListingApi.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using HotelListingApi.Domain.Extensions;
+using HotelListingApi.Domain.Models.Filtering;
 
 namespace HotelListingApi.Service;
 
-public class CountryService(HotelListDbContext dbContext) : ICountryService
+public class CountryService(HotelListDbContext dbContext , IMapper mapper) : ICountryService
 {
     public async Task<Country> CreateAsync(Country country)
     {
@@ -24,21 +32,48 @@ public class CountryService(HotelListDbContext dbContext) : ICountryService
         }
 
         dbContext.Countries.Remove(country);
-        await dbContext.SaveChangesAsync();
+        dbContext.Entry(country).State = EntityState.Modified;
 
+        await dbContext.SaveChangesAsync();
         return country;
     }
 
-    public async Task<List<Country>> GetAllAsync()
+    public async Task<Result<PaginationResult<CountryListDto>>> GetAllAsync(paginationParameters paginationParameters, CountryFilterParameter? filters)
     {
-        return await dbContext.Countries
-            .Include(c => c.Hotels)
-            .ToListAsync();
+
+
+var allowedSortColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) //create new dictionary in memory , maping user input to what i have in my dto
+    {
+        { "id", "CountryId" },
+        { "name", "Name" },
+        { "ShortName" , "ShortName" }
+    };
+
+        var query = dbContext.Countries.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(filters?.Search))
+        {
+            var term = filters.Search.Trim();
+            query = query.Where(c => EF.Functions.Like(c.Name, $"%{term}%")
+            || EF.Functions.Like(c.ShortName, $"%{term}%"));
+        }
+
+
+        var countries = await query
+                     .AsNoTracking()
+                   //.Include(c => c.Hotels)
+                     .ProjectTo<CountryListDto>(mapper.ConfigurationProvider)
+                     .ToPaginationResultAsync(paginationParameters, allowedSortColumns,
+                   defaultSortColumn: "CountryId");
+
+
+        return Result<PaginationResult<CountryListDto>>.Success(countries);
+
     }
 
     public async Task<Country> GetByIdAsync(int CountryId)
     {
-        var country = await dbContext.Countries
+             var country = await dbContext.Countries
             .Include(c => c.Hotels)
             .FirstOrDefaultAsync(c => c.CountryId == CountryId );
 
@@ -58,6 +93,9 @@ public class CountryService(HotelListDbContext dbContext) : ICountryService
 
         existingCountry.Name = country.Name;
         existingCountry.ShortName = country.ShortName;
+
+       // dbContext.Entry(existingCountry).State = EntityState.Modified; // Tracks the change
+
 
         await dbContext.SaveChangesAsync();
 
