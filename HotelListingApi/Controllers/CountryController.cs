@@ -9,12 +9,15 @@ using HotelListingApi.Interfaces;
 using HotelListingApi.Service;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace HotelListingApi.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[EnableRateLimiting(RateLimitingConstants.FixedPolicy)]
+
 public class CountryController(HotelListDbContext dbContext, ICountryService countryService, IMapper mapper) : BaseApiController
 {
     [HttpGet]

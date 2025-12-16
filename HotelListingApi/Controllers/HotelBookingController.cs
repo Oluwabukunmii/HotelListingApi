@@ -7,12 +7,15 @@ using HotelListingApi.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
 namespace HotelListingApi.Controllers
 {
     [Route("api/hotels/{hotelId:int}/bookings")]
     [ApiController]
+    [EnableRateLimiting(RateLimitingConstants.PerUserPolicy)]
+
 
     public class HotelBookingController : BaseApiController
     {
