@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using HotelListingApi.Common;
 using HotelListingApi.Domain;
 using HotelListingApi.Domain.Models;
 using HotelListingApi.Domain.Models.Filtering;
@@ -8,12 +9,15 @@ using HotelListingApi.Interfaces;
 using HotelListingApi.Service;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace HotelListingApi.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[EnableRateLimiting(RateLimitingConstants.FixedPolicy)]
+
 public class HotelController(HotelListDbContext dbContext, IHotelService hotelService, IMapper mapper) : BaseApiController
 {
 

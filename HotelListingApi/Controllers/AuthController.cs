@@ -56,7 +56,10 @@ namespace HotelListingApi.Controllers
                 ));
             }
 
-            //  Add matching record in your custom Users table
+            await userManager.AddToRoleAsync(identityUser, "User");
+
+
+            // Add matching record in your custom Users table
             var applicationUser = new ApplicationUser
             {
                 ApplicationUserId = identityUser.Id,
@@ -65,10 +68,41 @@ namespace HotelListingApi.Controllers
             };
 
             hotelListDbContext.ApplicationUser.Add(applicationUser);
+
             await hotelListDbContext.SaveChangesAsync();
 
             return ToActionResult(Result.Success("User successfully created"));
+
+
         }
+
+        [HttpPost("register-hotel-admin")]
+        [Authorize(Roles = "Administrator")]
+        public async Task<ActionResult> RegisterHotelAdmin(RegisterUserDto dto)
+        {
+            var identityUser = new IdentityUser
+            {
+                UserName = dto.UserName,
+                Email = dto.Email
+            };
+
+            var result = await userManager.CreateAsync(identityUser, dto.Password);
+            if (!result.Succeeded)
+                return BadRequest(result.Errors);
+
+            await userManager.AddToRoleAsync(identityUser, "HotelAdmin");
+
+            hotelListDbContext.ApplicationUser.Add(new ApplicationUser
+            {
+                ApplicationUserId = identityUser.Id,
+                Email = dto.Email,
+                FullName = dto.fullName
+            });
+
+            await hotelListDbContext.SaveChangesAsync();
+            return Ok("Hotel Admin registered successfully");
+        }
+
 
         // POST: api/auth/login
         [HttpPost("login")]
