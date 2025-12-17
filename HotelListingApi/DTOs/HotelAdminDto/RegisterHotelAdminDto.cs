@@ -20,7 +20,7 @@ namespace HotelListingApi.DTOs.HotelAdminDto
 
         //Relationship
 
-        public int? AssociatedHotelId { get; set; }
+       // public int? AssociatedHotelId { get; set; }
 
         //Navigation Property
 

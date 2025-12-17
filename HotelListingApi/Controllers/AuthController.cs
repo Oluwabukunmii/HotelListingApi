@@ -75,7 +75,7 @@ namespace HotelListingApi.Controllers
 
 
         }
-
+        //Hotel admin endpoint
         [HttpPost("register-hotel-admin")]
         [Authorize(Roles = "Administrator")]
         public async Task<ActionResult> RegisterHotelAdmin(RegisterUserDto dto)
