@@ -7,6 +7,7 @@ using HotelListingApi.Domain.Paging;
 using HotelListingApi.DTOs.HotelDtos;
 using HotelListingApi.Interfaces;
 using HotelListingApi.Service;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -22,6 +23,7 @@ public class HotelController(HotelListDbContext dbContext, IHotelService hotelSe
 {
 
     [HttpGet]
+
     public async Task<ActionResult<PaginationResult<HotelDto>>> GetAllAsync([FromQuery]paginationParameters paginationParameters, [FromQuery]HotelFilterParameter filters)
     {
         var hotelResult = await hotelService.GetAllAsync(paginationParameters, filters);
@@ -54,6 +56,8 @@ public class HotelController(HotelListDbContext dbContext, IHotelService hotelSe
 
 
     [HttpPut("{id}")]
+    [Authorize(Roles = "Administrator")]
+
     public async Task<IActionResult> UpdateAsync(int id, CreateHotelDto CreateHotelDto)
     {
 
@@ -78,6 +82,8 @@ public class HotelController(HotelListDbContext dbContext, IHotelService hotelSe
 
 
     [HttpPost]
+    [Authorize(Roles = "Administrator")]
+
     public async Task<ActionResult<Hotel>> CreateAsync(CreateHotelDto CreateHotelDto)
 
     {
@@ -95,6 +101,8 @@ public class HotelController(HotelListDbContext dbContext, IHotelService hotelSe
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Administrator")]
+
     public async Task<IActionResult> DeleteAsync(int id)
     {
 

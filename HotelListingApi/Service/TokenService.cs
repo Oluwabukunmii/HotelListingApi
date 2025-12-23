@@ -28,6 +28,9 @@ namespace HotelListingApi.Service
 
             claims.Add(new Claim(ClaimTypes.Email, user.Email));
             claims.Add(new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())); // Convert Guid to string for token
+           // claims.Add(new Claim("FullName", applicationUser.FullName ?? ""));
+           // claims.Add(new Claim("HotelAdminId", hotelAdmin?.Id.ToString() ?? ""));
+
 
 
 

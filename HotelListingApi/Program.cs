@@ -138,6 +138,8 @@ builder.Services.AddScoped<IHotelService, HotelService>();
 builder.Services.AddScoped<ICountryService, CountryService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<IUserService, UserService>();
+
 
 //Add outpt cache.
 

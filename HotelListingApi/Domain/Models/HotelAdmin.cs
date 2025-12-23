@@ -10,6 +10,12 @@
 
         // Many-to-Many with Hotel
         public ICollection<Hotel>? Hotels { get; set; }
+
+        public ApplicationUser? ApplicationUser { get; set; }
+        
+        public string? ApplicationUserId { get; set; }// links to IdentityUser
+
+
     }
 }
  

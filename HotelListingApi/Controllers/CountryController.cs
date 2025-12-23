@@ -7,6 +7,7 @@ using HotelListingApi.Domain.Paging;
 using HotelListingApi.DTOs.CountryDtos;
 using HotelListingApi.Interfaces;
 using HotelListingApi.Service;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.AspNetCore.RateLimiting;
@@ -22,6 +23,8 @@ public class CountryController(HotelListDbContext dbContext, ICountryService cou
 {
     [HttpGet]
     [OutputCache(PolicyName = CacheConstants.AuthenticatedUserCachingPolicy)]
+    [Authorize(Roles = "Administrator")]
+
     public async Task<ActionResult<PaginationResult<CountryListDto>>> GetAllAsync([FromQuery] paginationParameters paginationParameters, [FromQuery] CountryFilterParameter? filters)
     {
         var result = await countryService.GetAllAsync(paginationParameters, filters);
@@ -34,6 +37,7 @@ public class CountryController(HotelListDbContext dbContext, ICountryService cou
     }
 
     [HttpGet("{id}")]
+
     public async Task<ActionResult<Country>> GetByIdAsync(int id)
     {
         var country = await countryService.GetByIdAsync(id);
@@ -48,6 +52,8 @@ public class CountryController(HotelListDbContext dbContext, ICountryService cou
     }
 
     [HttpPost]
+    [Authorize(Roles = "Administrator")]
+
     public async Task<ActionResult<Country>> CreateAsync(CreateCountryDto createCountryDto)
     {
         var country = mapper.Map<Country>(createCountryDto);
@@ -60,6 +66,8 @@ public class CountryController(HotelListDbContext dbContext, ICountryService cou
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = "Administrator")]
+
     public async Task<IActionResult> UpdateAsync(int id, CreateCountryDto createCountryDto)
     {
         var country = mapper.Map<Country>(createCountryDto);
@@ -77,6 +85,8 @@ public class CountryController(HotelListDbContext dbContext, ICountryService cou
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Administrator")]
+
     public async Task<IActionResult> DeleteAsync(int id)
     {
         var deletedCountry = await countryService.DeleteAsync(id);
@@ -92,5 +102,5 @@ public class CountryController(HotelListDbContext dbContext, ICountryService cou
 
 
 
-
+//Do a patch endpoint
 
