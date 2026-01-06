@@ -48,7 +48,6 @@ var allowedSortColumns = new Dictionary<string, string>(StringComparer.OrdinalIg
         { "name", "Name" },
         { "ShortName" , "ShortName" }
     };
-
         var query = dbContext.Countries.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(filters?.Search))

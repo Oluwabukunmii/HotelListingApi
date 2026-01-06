@@ -16,6 +16,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog.Events;
 using Serilog;
+using HotelListing.Api.MiddleWare;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -166,6 +167,10 @@ try
     builder.Services.AddScoped<IUserService, UserService>();
 
 
+    builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+    builder.Services.AddProblemDetails();
+
+
     //Add outpt cache.
 
     builder.Services.AddOutputCache(options =>
@@ -246,6 +251,9 @@ try
     // ✅ Build app ONCE
     var app = builder.Build();
 
+    app.UseExceptionHandler();
+
+
     app.UseSerilogRequestLogging(options =>
     {
         options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000}ms";
@@ -297,7 +305,7 @@ try
 
     app.MapControllers();
 
-    Log.Information("Serilog TEST: App started successfully");
+    Log.Information(" Api started successfully");
 
 
     app.Run();
