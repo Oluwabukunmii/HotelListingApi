@@ -13,12 +13,14 @@ namespace HotelListingApi.Service
         private readonly UserManager<IdentityUser> userManager;
         private readonly ITokenService tokenService;
         private readonly HotelListDbContext hotelListDbContext;
+        private readonly ILogger<UserService> logger;
 
-        public UserService(UserManager<IdentityUser> userManager, ITokenService tokenService, HotelListDbContext hotelListDbContext)
+        public UserService(UserManager<IdentityUser> userManager, ITokenService tokenService, HotelListDbContext hotelListDbContext, ILogger<UserService> logger)
         {
             this.userManager = userManager;
             this.tokenService = tokenService;
             this.hotelListDbContext = hotelListDbContext;
+            this.logger = logger;
         }
 
        
@@ -46,6 +48,9 @@ namespace HotelListingApi.Service
             if (!result.Succeeded)
             {
                 var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+
+                logger.LogError("User registration failed for {Email}: {Errors}", registerDto.Email, string.Join(", ", errors));
+
                 return Result<RegisteredUserDto>.Failure(
                     new Error(ErrorTypes.Validation, errors)
                 );
@@ -116,9 +121,14 @@ namespace HotelListingApi.Service
             var user = await userManager.FindByEmailAsync(loginDto.Email);
 
             if (user == null)
+            {
+
+                logger.LogWarning("Failed login attempt for email: {Email}", loginDto.Email);
+
                 return Result<LoginUserResponseDto>.Failure(
-                    new Error(ErrorTypes.BadRequest, "Invalid email or password.")
-                );
+                        new Error(ErrorTypes.BadRequest, "Invalid email or password.")
+                    );
+            }
 
             var passwordValid = await userManager.CheckPasswordAsync(user, loginDto.Password);
             if (!passwordValid)
