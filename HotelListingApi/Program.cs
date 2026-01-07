@@ -17,6 +17,12 @@ using Microsoft.OpenApi.Models;
 using Serilog.Events;
 using Serilog;
 using HotelListing.Api.MiddleWare;
+using Microsoft.AspNetCore.Mvc.Versioning;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using HotelListingApi;
+using Microsoft.Extensions.Options;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using System;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -49,15 +55,25 @@ try
     builder.Services.AddEndpointsApiExplorer();
     //builder.Services.AddMemoryCache();
 
+    builder.Services.AddApiVersioning(options =>
+    {
+        options.AssumeDefaultVersionWhenUnspecified = true;
+        options.DefaultApiVersion = new Microsoft.AspNetCore.Mvc.ApiVersion(1, 0);
+        options.ReportApiVersions = true;
+        options.ApiVersionReader = new UrlSegmentApiVersionReader(); //URL segment versioning
+    });
+
+    builder.Services.AddVersionedApiExplorer(options =>
+    {
+        options.GroupNameFormat = "'v'VVV";
+        options.SubstituteApiVersionInUrl = true;
+    });
+
 
     // ✅ Configure Swagger for JWT Authorization
     builder.Services.AddSwaggerGen(options =>
     {
-        options.SwaggerDoc("v1", new OpenApiInfo
-        {
-            Title = "Hotel Listing API",
-            Version = "v1"
-        });
+      
 
         options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme
         {
@@ -187,40 +203,40 @@ try
     builder.Services.AddRateLimiter(options =>
     {
         options.AddFixedWindowLimiter(RateLimitingConstants.FixedPolicy, opt =>
-    {
-        opt.Window = TimeSpan.FromMinutes(1);
-        opt.PermitLimit = 50;
-        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        opt.QueueLimit = 5;
-    });
+        {
+            opt.Window = TimeSpan.FromMinutes(1);
+            opt.PermitLimit = 50;
+            opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            opt.QueueLimit = 5;
+        });
 
         options.AddPolicy(RateLimitingConstants.PerUserPolicy, context =>
-    {
-        var username = context.User?.Identity?.Name ?? "anonymous";
-
-        return RateLimitPartition.GetSlidingWindowLimiter(username, _ => new SlidingWindowRateLimiterOptions
         {
-            Window = TimeSpan.FromMinutes(1),
-            PermitLimit = 50,
-            SegmentsPerWindow = 6,
-            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-            QueueLimit = 3
+            var username = context.User?.Identity?.Name ?? "anonymous";
+
+            return RateLimitPartition.GetSlidingWindowLimiter(username, _ => new SlidingWindowRateLimiterOptions
+            {
+                Window = TimeSpan.FromMinutes(1),
+                PermitLimit = 50,
+                SegmentsPerWindow = 6,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 3
+            });
         });
-    });
 
         // Global rate limit by IP
         options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
-    {
-        var ipAddress = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-
-        return RateLimitPartition.GetFixedWindowLimiter(ipAddress, _ => new FixedWindowRateLimiterOptions
         {
-            Window = TimeSpan.FromMinutes(1),
-            PermitLimit = 200,
-            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-            QueueLimit = 10
+            var ipAddress = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+            return RateLimitPartition.GetFixedWindowLimiter(ipAddress, _ => new FixedWindowRateLimiterOptions
+            {
+                Window = TimeSpan.FromMinutes(1),
+                PermitLimit = 200,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 10
+            });
         });
-    });
         options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
         options.OnRejected = async (context, cancellationToken) =>
@@ -245,11 +261,15 @@ try
         };
     });
 
+    // ✅ version - aware Swagger configuration
+builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
 
 
 
     // ✅ Build app ONCE
     var app = builder.Build();
+
+
 
     app.UseExceptionHandler();
 
@@ -278,6 +298,7 @@ try
         };
     });
 
+    var versionDescriptionProvider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
 
     // ✅ Configure the HTTP request pipeline
     if (app.Environment.IsDevelopment())
@@ -285,8 +306,11 @@ try
         app.UseSwagger();
         app.UseSwaggerUI(options =>
         {
-            options.SwaggerEndpoint("/swagger/v1/swagger.json", "Hotel Listing API v1");
-
+            foreach(var description in versionDescriptionProvider.ApiVersionDescriptions)
+        {
+                options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json",
+                    description.GroupName.ToUpperInvariant());
+            }
             // Clean, compact Swagger UI
             options.DefaultModelsExpandDepth(-1); // hides schema panel
             options.DefaultModelExpandDepth(0);   // collapses model details

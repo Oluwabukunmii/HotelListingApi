@@ -15,8 +15,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HotelListingApi.Controllers;
 
-[Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [ApiController]
+[ApiVersion("1.0")]
 [EnableRateLimiting(RateLimitingConstants.FixedPolicy)]
 
 public class CountryController(HotelListDbContext dbContext, ICountryService countryService, IMapper mapper) : BaseApiController
